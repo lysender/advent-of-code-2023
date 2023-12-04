@@ -15,11 +15,11 @@ struct PartSymbol {
 pub fn day03_puzzle01() {
     let filename: PathBuf = Path::new("data").join("day3-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
-    let value = sum_part_numbers(input_string);
+    let value = sum_part_numbers(input_string.as_str());
     println!("Total of part numbers: {}", value);
 }
 
-fn sum_part_numbers(input: String) -> u32 {
+fn sum_part_numbers(input: &str) -> u32 {
     // Map coordinates of all special characters, excluding "."
     // Find all adjacent numbers, but do not repeat number if already accounted for
     // Sum all numbers
@@ -28,7 +28,7 @@ fn sum_part_numbers(input: String) -> u32 {
     let mut counted: BTreeSet<(usize, usize)> = BTreeSet::new();
     let mut total: u32 = 0;
 
-    for (i, line) in input.split("\n").enumerate() {
+    for (i, line) in input.lines().enumerate() {
         let line_symbols = parse_line_for_symbols(line, i);
         for line_symbol in line_symbols.iter() {
             symbols.push(line_symbol.clone());
@@ -37,15 +37,9 @@ fn sum_part_numbers(input: String) -> u32 {
         rows.push(line_symbols);
     }
 
-    let mut marker_symbols: Vec<&PartSymbol> = Vec::new(); 
+    let markers: Vec<&PartSymbol> = symbols.iter().filter(|x| !x.is_number).collect();
 
-    for symbol in symbols.iter() {
-        if !symbol.is_number {
-           marker_symbols.push(symbol);
-        }
-    }
-
-    for marker in marker_symbols.clone().iter() {
+    for marker in markers.iter() {
         // Find all numbers adjacent to the symbol
         let same_line_symbols = &rows[marker.position.0];
         // Find symbols on same line
@@ -116,7 +110,7 @@ fn parse_line_for_symbols(line: &str, line_number: usize) -> Vec<PartSymbol> {
         } else if char == '.' {
             // Flush digits buffer
             if digits_buffer.len() > 0 {
-                if let Some(symbol) = convert_to_part_symbol(digits_buffer.clone(), line_number, last_index) {
+                if let Some(symbol) = convert_to_part_symbol(digits_buffer.as_str(), line_number, last_index) {
                     symbols.push(symbol);
                 }
             }
@@ -124,7 +118,7 @@ fn parse_line_for_symbols(line: &str, line_number: usize) -> Vec<PartSymbol> {
         } else {
             if digits_buffer.len() > 0 {
                 // Flush digits buffer
-                if let Some(symbol) = convert_to_part_symbol(digits_buffer.clone(), line_number, last_index) {
+                if let Some(symbol) = convert_to_part_symbol(digits_buffer.as_str(), line_number, last_index) {
                     symbols.push(symbol);
                 }
             }
@@ -144,14 +138,14 @@ fn parse_line_for_symbols(line: &str, line_number: usize) -> Vec<PartSymbol> {
     }
 
     if digits_buffer.len() > 0 {
-        if let Some(symbol) = convert_to_part_symbol(digits_buffer.clone(), line_number, last_index) {
+        if let Some(symbol) = convert_to_part_symbol(digits_buffer.as_str(), line_number, last_index) {
             symbols.push(symbol);
         }
     }
     symbols
 }
 
-fn convert_to_part_symbol(digits_buffer: String, line_number: usize, last_index: usize) -> Option<PartSymbol> {
+fn convert_to_part_symbol(digits_buffer: &str, line_number: usize, last_index: usize) -> Option<PartSymbol> {
     if let Ok(number) = digits_buffer.parse::<u32>() {
         let mut y: usize = 0;
         if last_index >= digits_buffer.len() {
@@ -206,7 +200,7 @@ fn is_hitbox_middle(col: usize, index: usize, length: usize) -> bool {
         start -= 1;
     }
     let end = start + length;
-    return col >= start && col <= end;
+    col >= start && col <= end
 }
 
 fn is_hitbox(col: usize, index: usize, length: usize) -> bool {
@@ -217,7 +211,7 @@ fn is_hitbox(col: usize, index: usize, length: usize) -> bool {
 }
 
 
-fn compute_gears(input: String) -> u32 {
+fn compute_gears(input: &str) -> u32 {
     // Gears are two parts that are adjacent to each other via the * symbol
     // Map coordinates of all special characters, excluding "."
     // Find all adjacent numbers, but do not repeat number if already accounted for
@@ -226,7 +220,7 @@ fn compute_gears(input: String) -> u32 {
     let mut rows: Vec<Vec<PartSymbol>> = Vec::new();
     let mut total: u32 = 0;
 
-    for (i, line) in input.split("\n").enumerate() {
+    for (i, line) in input.lines().enumerate() {
         let line_symbols = parse_line_for_symbols(line, i);
         for line_symbol in line_symbols.iter() {
             symbols.push(line_symbol.clone());
@@ -303,7 +297,7 @@ fn find_gear_ratio(gear: &PartSymbol, rows: &Vec<Vec<PartSymbol>>) -> u32 {
 pub fn day03_puzzle02() {
     let filename: PathBuf = Path::new("data").join("day3-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
-    let value = compute_gears(input_string);
+    let value = compute_gears(input_string.as_str());
     println!("Total gears: {}", value);
 }
 
@@ -323,13 +317,13 @@ mod tests {
 ......755.
 ...$.*....
 .664.598.."#;
-        let total = sum_part_numbers(input.to_string());
+        let total = sum_part_numbers(input);
         assert_eq!(total, 4361);
     }
 
     #[test]
     fn test_day3_puzzle01_data2() {
-        let input = r#"12.......*..
+        let input = "12.......*..
 +.........34
 .......-12..
 ..78........
@@ -340,14 +334,14 @@ mod tests {
 ............
 2.2......12.
 .*.........*
-1.1.......56"#;
-        let total = sum_part_numbers(input.to_string());
+1.1.......56";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 413);
     }
 
     #[test]
     fn test_day3_puzzle01_data3() {
-        let input = r#"12.......*..
+        let input = "12.......*..
 +.........34
 .......-12..
 ..78........
@@ -358,49 +352,49 @@ mod tests {
 ............
 2.2......12.
 .*.........*
-1.1..503+.56"#;
-        let total = sum_part_numbers(input.to_string());
+1.1..503+.56";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 925);
     }
     
     #[test]
     fn test_day3_puzzle01_data4() {
-        let input = r#".......5......
+        let input = ".......5......
 ..7*..*.......
 ...*13*.......
-.......15....."#;
-        let total = sum_part_numbers(input.to_string());
+.......15.....";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 40);
     }
 
     #[test]
     fn test_day3_puzzle01_data5() {
-        let input = r#"100
-200"#;
-        let total = sum_part_numbers(input.to_string());
+        let input = "100
+200";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 0);
     }
 
     #[test]
     fn test_day3_puzzle01_data6() {
-        let input = r#"503+"#;
-        let total = sum_part_numbers(input.to_string());
+        let input = "503+";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 503);
     }
 
     #[test]
     fn test_day3_puzzle01_data7() {
-        let input = r#"............
+        let input = "............
 ..789.......
 ...+........
-............"#;
-        let total = sum_part_numbers(input.to_string());
+............";
+        let total = sum_part_numbers(input);
         assert_eq!(total, 789);
     }
 
     #[test]
     fn test_day3_puzzle02() {
-        let input = r#"467..114..
+        let input = "467..114..
 ...*......
 ..35..633.
 ......#...
@@ -409,8 +403,8 @@ mod tests {
 ..592.....
 ......755.
 ...$.*....
-.664.598.."#;
-        let gears = compute_gears(input.to_string());
+.664.598..";
+        let gears = compute_gears(input);
         assert_eq!(gears, 467835);
 
     }
