@@ -1,32 +1,25 @@
 
-use std::{fs, path::PathBuf};
-use std::path::Path;
-
 #[derive(Debug)]
-struct CubeSet {
-    red: u32,
-    green: u32,
-    blue: u32,
+pub struct CubeSet {
+    pub red: u32,
+    pub green: u32,
+    pub blue: u32,
 }
 
-pub fn day02_puzzle01() {
-    let filename: PathBuf = Path::new("data").join("day2-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let cube_set = CubeSet {
-        red: 12,
-        green: 13,
-        blue: 14,
-    };
-    let value = get_total_games(input_string, cube_set);
-    println!("Total games: {}", value);
+pub fn part1(input: &str, cube_set: CubeSet) -> u32 {
+    get_total_games(input, cube_set)
 }
 
-fn get_total_games(input: String, limits: CubeSet) -> u32 {
+pub fn part2(input: &str) -> u32 {
+    get_sum_of_power(input)
+
+}
+
+fn get_total_games(input: &str, limits: CubeSet) -> u32 {
     // Cubes is a tupple of red, green and blue cubes
     // Value can be zero
     let mut total: u32 = 0;
-    let lines: Vec<&str> = input.split("\n").collect();
-    for line in lines.iter() {
+    for line in input.lines() {
         // Each line contains the game ID and the sets
         // Number of sets may be arbitrary
         if line.len() > 0 {
@@ -127,20 +120,11 @@ fn extract_game_set(line: &str) -> CubeSet {
     cube_set
 }
 
-pub fn day02_puzzle02() {
-    let filename: PathBuf = Path::new("data").join("day2-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let value = get_sum_of_power(input_string);
-    println!("Sum of min power: {}", value);
-
-}
-
-fn get_sum_of_power(input: String) -> u32 {
+fn get_sum_of_power(input: &str) -> u32 {
     // Get minimum cube set for each game and compute its power
     // Sum all the power
     let mut total: u32 = 0;
-    let lines: Vec<&str> = input.split("\n").collect();
-    for line in lines.iter() {
+    for line in input.lines() {
         // Each line contains the game ID and the sets
         // Number of sets may be arbitrary
         if line.len() > 0 {
@@ -196,7 +180,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
             green: 13,
             blue: 14,
         };
-        let total = get_total_games(input.to_string(), cube_set);
+        let total = get_total_games(input, cube_set);
         assert_eq!(total, 8);
     }
 
@@ -209,7 +193,7 @@ Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
         "#;
-        let total = get_sum_of_power(input.to_string());
+        let total = get_sum_of_power(input);
         assert_eq!(total, 2286);
 
     }

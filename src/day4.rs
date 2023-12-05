@@ -1,25 +1,16 @@
 
-use std::{fs, path::PathBuf};
-use std::path::Path;
-
 #[derive(Debug, Clone)]
-struct Card {
-    id: u32,
-    matches: u32,
+pub struct Card {
+    pub id: u32,
+    pub matches: u32,
 }
 
-pub fn day04_puzzle01() {
-    let filename: PathBuf = Path::new("data").join("day4-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let value = compute_winning_points(input_string.as_str());
-    println!("Winning points: {}", value);
+pub fn part1(input: &str) -> u32 {
+    compute_winning_points(input)
 }
 
-pub fn day04_puzzle02() {
-    let filename: PathBuf = Path::new("data").join("day4-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let value = compute_total_cards(input_string.as_str());
-    println!("Total cards: {}", value);
+pub fn part2(input: &str) -> u32 {
+    compute_total_cards(input)
 }
 
 fn compute_winning_points(input: &str) -> u32 {

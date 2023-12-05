@@ -1,7 +1,4 @@
 
-use std::{fs, path::PathBuf};
-use std::path::Path;
-
 const SPELLED_DIGITS: [&'static str; 9] = [
     "one",
     "two",
@@ -14,20 +11,17 @@ const SPELLED_DIGITS: [&'static str; 9] = [
     "nine",
 ];
 
-pub fn day01_puzzle01() {
+pub fn part1(input: &str) -> u32 {
     // Input as string with multiple lines
     // Each line may contain digits, combine the first and last digit to form a single
     // two-digit number
     // There may be more than 2 digits, only pick the first and last
     // Ignore other characters
     // If there is only 1 digit found, repeat it
-    let filename: PathBuf = Path::new("data").join("day1-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let value = extract_total_calibration_values(input_string);
-    println!("Calibration value total: v1: {}", value);
+    extract_total_calibration_values(input)
 }
 
-pub fn day01_puzzle02() {
+pub fn part2(input: &str) -> u32 {
     // Input as string with multiple lines
     // Each line may contain digits, combine the first and last digit to form a single
     // two-digit number
@@ -37,26 +31,20 @@ pub fn day01_puzzle02() {
     // digits
     // Ignore other characters
     // If there is only 1 digit found, repeat it
-    let filename: PathBuf = Path::new("data").join("day1-input.txt");
-    let input_string = fs::read_to_string(filename).unwrap();
-    let value = extract_total_calibration_values_v2(input_string);
-
-    println!("Calibration value total: v2: {}", value);
+    extract_total_calibration_values_v2(input)
 }
 
-fn extract_total_calibration_values(input: String) -> u32 {
+fn extract_total_calibration_values(input: &str) -> u32 {
     let mut total: u32 = 0;
-    let lines: Vec<&str> = input.split("\n").collect();
-    // Iterate each lines
-    for line in lines.iter() {
+    for line in input.lines() {
         // Collect digits for each line
-        let digit = extract_line_value(line.to_string());
+        let digit = extract_line_value(line);
         total += digit;
     }
     return total;
 }
 
-fn extract_line_value(line: String) -> u32 {
+fn extract_line_value(line: &str) -> u32 {
     let mut digits: Vec<u32> = Vec::new();
     for char in line.chars() {
         if let Some(digit) = char.to_digit(10) {
@@ -76,19 +64,17 @@ fn extract_line_value(line: String) -> u32 {
     }
 }
 
-fn extract_total_calibration_values_v2(input: String) -> u32 {
+fn extract_total_calibration_values_v2(input: &str) -> u32 {
     let mut total: u32 = 0;
-    let lines: Vec<&str> = input.split("\n").collect();
-    // Iterate each lines
-    for line in lines.iter() {
+    for line in input.lines() {
         // Collect digits for each line
-        let digit = extract_line_value_v2(line.to_string());
+        let digit = extract_line_value_v2(line);
         total += digit;
     }
     return total;
 }
 
-fn extract_line_value_v2(line: String) -> u32 {
+fn extract_line_value_v2(line: &str) -> u32 {
     // Extract digits, but digits can be spelled out 0-9 digits
     // To to this, we need to walk from start to end
     // We will use a start and end pointer
@@ -152,42 +138,40 @@ mod tests {
 
     #[test]
     fn test_day1_puzzle01() {
-        let lines = r#"
-1abc2
+        let lines = "1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
-treb7uchet"#;
+treb7uchet";
 
-        let total = extract_total_calibration_values(lines.to_string());
+        let total = extract_total_calibration_values(lines);
         assert_eq!(total, 142);
     }
 
     #[test]
     fn test_day1_puzzle02() {
-        let lines = r#"
+        let lines = "
 two1nine
 eightwothree
 abcone2threexyz
 xtwone3four
 4nineeightseven2
 zoneight234
-7pqrstsixteen"#;
-        let total = extract_total_calibration_values_v2(lines.to_string());
+7pqrstsixteen";
+        let total = extract_total_calibration_values_v2(lines);
         assert_eq!(total, 281);
 
         // Test another
         let lines2 = "eightfivesssxxmgthreethreeone1sevenhnz";
-        let total2 = extract_total_calibration_values_v2(lines2.to_string());
+        let total2 = extract_total_calibration_values_v2(lines2);
         assert_eq!(total2, 87);
 
         // Overlapping words 
         let lines3 = "eighthree";
-        let total3 = extract_total_calibration_values_v2(lines3.to_string());
+        let total3 = extract_total_calibration_values_v2(lines3);
         assert_eq!(total3, 83);
 
         let lines4 = "sevenine";
-        let total4 = extract_total_calibration_values_v2(lines4.to_string());
+        let total4 = extract_total_calibration_values_v2(lines4);
         assert_eq!(total4, 79);
-
     }
 }

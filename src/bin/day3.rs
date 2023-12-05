@@ -1,21 +1,27 @@
 
+use std::{fs, path::PathBuf};
+use std::path::Path;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone)]
-pub struct PartSymbol {
-    pub position: (usize, usize),
-    pub length: usize,
-    pub symbol: Option<char>,
-    pub number: Option<u32>,
-    pub is_number: bool,
+struct PartSymbol {
+    position: (usize, usize),
+    length: usize,
+    symbol: Option<char>,
+    number: Option<u32>,
+    is_number: bool,
 }
 
-pub fn part1(input: &str) -> u32 {
-    sum_part_numbers(input)
+fn main() {
+    part1();
+    part2();
 }
 
-pub fn part2(input: &str) -> u32 {
-    compute_gears(input)
+pub fn part1() {
+    let filename: PathBuf = Path::new("data").join("day3-input.txt");
+    let input_string = fs::read_to_string(filename).unwrap();
+    let value = sum_part_numbers(input_string.as_str());
+    println!("Total of part numbers: {}", value);
 }
 
 fn sum_part_numbers(input: &str) -> u32 {
@@ -209,6 +215,7 @@ fn is_hitbox(col: usize, index: usize, length: usize) -> bool {
     return is_hitbox_edges(col, index, length);
 }
 
+
 fn compute_gears(input: &str) -> u32 {
     // Gears are two parts that are adjacent to each other via the * symbol
     // Map coordinates of all special characters, excluding "."
@@ -290,6 +297,13 @@ fn find_gear_ratio(gear: &PartSymbol, rows: &Vec<Vec<PartSymbol>>) -> u32 {
         return parts[0].number.unwrap() * parts[1].number.unwrap();
     }
     return 0;
+}
+
+pub fn part2() {
+    let filename: PathBuf = Path::new("data").join("day3-input.txt");
+    let input_string = fs::read_to_string(filename).unwrap();
+    let value = compute_gears(input_string.as_str());
+    println!("Total gears: {}", value);
 }
 
 #[cfg(test)]
@@ -397,5 +411,6 @@ mod tests {
 .664.598..";
         let gears = compute_gears(input);
         assert_eq!(gears, 467835);
+
     }
 }
