@@ -24,8 +24,8 @@ pub fn run_part2() {
     let filename: PathBuf = Path::new("data").join("day5-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
     let ts = Instant::now();
-    let value = part2(input_string.as_str());
+    //let value = part2(input_string.as_str());
     let duration = ts.elapsed().as_millis();
-    println!("Closest location v2: {}", value);
+    //println!("Closest location v2: {}", value);
     println!("Duration: {} ms", duration);
 }

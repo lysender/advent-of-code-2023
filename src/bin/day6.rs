@@ -16,7 +16,7 @@ pub fn run_part1() {
     let ts = Instant::now();
     let value = part1(input_string.as_str());
     let duration = ts.elapsed().as_millis();
-    println!("Closest location: {}", value);
+    println!("Product of total ways: {}", value);
     println!("Duration: {} ms", duration);
 }
 
@@ -26,6 +26,6 @@ pub fn run_part2() {
     let ts = Instant::now();
     let value = part2(input_string.as_str());
     let duration = ts.elapsed().as_millis();
-    println!("Closest location v2: {}", value);
+    println!("Product of total ways: {}", value);
     println!("Duration: {} ms", duration);
 }

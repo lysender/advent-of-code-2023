@@ -12,3 +12,12 @@ insert_final_newline = true
 [*.{rs,js,ts,json,yaml,yml,xml,html,css,scss}]
 charset = utf-8
 
+# Indentation override for all rs under src directory
+[src/**.{rs}]
+indent_style = space
+indent_size = 4
+
+# Indentation override for all rs under benches directory
+[benches/**.{rs}]
+indent_style = space
+indent_size = 4
