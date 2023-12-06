@@ -1,7 +1,6 @@
 
 #[derive(Debug, Clone)]
 pub struct Card {
-    pub id: u32,
     pub matches: u32,
 }
 
@@ -39,12 +38,6 @@ fn get_matching_number_count(winners: &Vec<u32>, numbers: &Vec<u32>) -> u32 {
     matches
 }
 
-fn get_card_id(line: &str) -> u32 {
-    let str = line.replace("Card", "").trim().to_string();
-    let id: u32 = str.parse::<u32>().unwrap();
-    id
-}
-
 fn collect_card_numbers(line: &str) -> Vec<u32> {
     let mut numbers: Vec<u32> = Vec::new();
     let mut start: usize = 0;
@@ -73,42 +66,35 @@ fn compute_card_points(matches: u32) -> u32 {
 
 fn compute_total_cards(input: &str) -> u32 {
     let mut initial_cards: Vec<Card> = Vec::new();
-    let mut expanding_cards: Vec<Vec<Card>> = Vec::new();
+    let mut card_copies: Vec<u32> = Vec::new();
 
     // Collect original cards first
     for line in input.lines() {
         let card_info: Vec<&str> = line.split(":").collect();
-        let id = get_card_id(card_info[0]);
         let numbers: Vec<&str> = card_info[1].split(" |").collect();
         let winners = collect_card_numbers(numbers[0]);
         let numbers = collect_card_numbers(numbers[1]);
 
         let card = Card {
-            id,
             matches: get_matching_number_count(&winners, &numbers),
         };
 
-        let mut row: Vec<Card> = Vec::new();
-        row.push(card.clone());
-        expanding_cards.push(row);
-
         initial_cards.push(card);
+        card_copies.push(1);
     }
 
-    for layer in 0..expanding_cards.len() {
-        // Clone the row so we can mutate rows below it
-        let row = expanding_cards[layer].clone();
-        for row_card in row.iter() {
-            if row_card.matches > 0 {
-                // Add more cards below the layer
-                // Create copies of cards down based on matches
-                for i_match in 0..row_card.matches {
-                    let copy_index = layer + i_match as usize + 1;
-                    if let Some(additional_card) = initial_cards.get(copy_index) {
-                        expanding_cards[copy_index].push(Card {
-                            id: additional_card.id,
-                            matches: additional_card.matches,
-                        });
+    // Expand the cards
+    for (i, card) in initial_cards.iter().enumerate() {
+        let copies = card_copies[i];
+        for _ in 0..copies {
+            // Add more card copies below the layer
+            // Create copies of cards down based on matches
+            if card.matches > 0 {
+                for i_match in 0..card.matches {
+                    let copy_index = i + i_match as usize + 1;
+                    // Ensure we don't get pass the bottom of the card list
+                    if initial_cards.get(copy_index).is_some() {
+                        card_copies[copy_index] += 1;
                     }
                 }
             }
@@ -116,11 +102,8 @@ fn compute_total_cards(input: &str) -> u32 {
     }
 
     // Sum all cards
-    let total_cards: usize  = expanding_cards.iter().map(|row| {
-        row.len()
-    }).sum();
-
-    total_cards as u32
+    let total_cards: u32 = card_copies.iter().sum();
+    total_cards
 }
 
 #[cfg(test)]
