@@ -14,4 +14,3 @@ fn part1_bench() {
     let input_string = fs::read_to_string(filename).unwrap();
     day5::part1(divan::black_box(input_string.as_str()));
 }
-

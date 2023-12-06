@@ -89,33 +89,42 @@ fn part2_reversed(input: &str) -> u64 {
 
     let mut closest_location: Option<u64> = None;
 
-    // Find the farthest location to build a zero to high range
     let loc_type = map_type_to_string(&MapType::Location);
     if let Some(locations) = almanac.mapping.get(&loc_type) {
         if locations.len() > 0 {
-            let mut sorted_locations = locations.clone();
+            // Sort the locations and start off with the closest location first
+            let mut sorted_locations: Vec<Range<u64>> = locations.iter().map(|x| x.dest.clone()).collect();
             sorted_locations.sort_by(|a, b| {
-                b.dest.end.cmp(&a.dest.end)
+                a.start.cmp(&b.start)
             });
-            let high = sorted_locations[0].dest.end as usize;
-            let range = 0..high;
 
-            for location in range.progress() {
-                let loc: u64 = location.try_into().unwrap();
-                let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, loc);
-                let temp = find_mapped_value_reversed(&almanac.mapping, &MapType::Humidity, humidity);
-                let light = find_mapped_value_reversed(&almanac.mapping, &MapType::Temp, temp);
-                let water = find_mapped_value_reversed(&almanac.mapping, &MapType::Light, light);
-                let fertilizer = find_mapped_value_reversed(&almanac.mapping, &MapType::Water, water);
-                let soil = find_mapped_value_reversed(&almanac.mapping, &MapType::Fertilizer, fertilizer);
-                let seed = find_mapped_value_reversed(&almanac.mapping, &MapType::Soil, soil);
-                let thinner_seed: usize = seed.try_into().unwrap();
+            // Insert 0..first low dest range - 1 to cover no mappings
+            if sorted_locations[0].start > 0 {
+                let first_range: Range<u64> = Range { start: 0, end: sorted_locations[0].start - 1 };
+                let first_slice: Vec<Range<u64>> = vec![first_range];
+                sorted_locations.splice(..0, first_slice);
+            }
 
-                if seed_exists(&seed_ranges, thinner_seed) {
-                    if closest_location.is_none() {
+            'outer: for location_range in sorted_locations.iter().progress() {
+                let location_range_clone: Range<usize> = Range {
+                    start: location_range.start as usize,
+                    end: location_range.end as usize,
+                };
+                for location in location_range_clone.progress() {
+                    let loc: u64 = location.try_into().unwrap();
+                    let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, loc);
+                    let temp = find_mapped_value_reversed(&almanac.mapping, &MapType::Humidity, humidity);
+                    let light = find_mapped_value_reversed(&almanac.mapping, &MapType::Temp, temp);
+                    let water = find_mapped_value_reversed(&almanac.mapping, &MapType::Light, light);
+                    let fertilizer = find_mapped_value_reversed(&almanac.mapping, &MapType::Water, water);
+                    let soil = find_mapped_value_reversed(&almanac.mapping, &MapType::Fertilizer, fertilizer);
+                    let seed = find_mapped_value_reversed(&almanac.mapping, &MapType::Soil, soil);
+                    let thinner_seed: usize = seed.try_into().unwrap();
+
+                    if seed_exists(&seed_ranges, thinner_seed) {
+                        // Found it?
                         closest_location = Some(loc);
-                    } else if loc < closest_location.unwrap() {
-                        closest_location = Some(loc);
+                        break 'outer;
                     }
                 }
             }
