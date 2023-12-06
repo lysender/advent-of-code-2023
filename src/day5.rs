@@ -1,5 +1,6 @@
 
 use std::{collections::HashMap, ops::Range, ops::RangeBounds};
+use indicatif::ProgressIterator;
 
 #[derive(Clone)]
 pub enum MapType {
@@ -48,19 +49,19 @@ pub fn part1(input: &str) -> u64 {
 }
 
 pub fn part2(input: &str) -> u64 {
-   part2_orig(input)
+   // part2_orig(input)
+   part2_reversed(input)
 }
 
 pub fn part2_orig(input: &str) -> u64 {
    let almanac = parse_input(input);
    let mut closest_location: Option<u64> = None;
 
-   for chunks in almanac.seeds.chunks(2) {
-      println!("{:?}", chunks);
-      let seed_start = chunks[0];
-      let seed_end = seed_start + chunks[1];
-      for seed_value in seed_start..seed_end {
-         let soil = find_mapped_value(&almanac.mapping, &MapType::Soil, seed_value);
+   for chunks in almanac.seeds.chunks(2).progress() {
+      let seed_start = chunks[0] as usize;
+      let seed_range: Range<usize> = Range { start: seed_start, end: seed_start + chunks[1] as usize };
+      for seed_value in seed_range {
+         let soil = find_mapped_value(&almanac.mapping, &MapType::Soil, seed_value as u64);
          let fertilizer = find_mapped_value(&almanac.mapping, &MapType::Fertilizer, soil);
          let water = find_mapped_value(&almanac.mapping, &MapType::Water, fertilizer);
          let light = find_mapped_value(&almanac.mapping, &MapType::Light, water);
@@ -81,9 +82,9 @@ pub fn part2_orig(input: &str) -> u64 {
 
 fn part2_reversed(input: &str) -> u64 {
    let almanac = parse_input(input);
-   let mut seed_ranges: Vec<(u64, u64)> = Vec::new();
+   let mut seed_ranges: Vec<(usize, usize)> = Vec::new();
    for chunk in almanac.seeds.chunks(2) {
-      seed_ranges.push((chunk[0], chunk[1]));
+      seed_ranges.push((chunk[0] as usize, chunk[1] as usize));
    }
 
    let mut closest_location: Option<u64> = None;
@@ -96,22 +97,25 @@ fn part2_reversed(input: &str) -> u64 {
          sorted_locations.sort_by(|a, b| {
             b.dest.end.cmp(&a.dest.end)
          });
-         let high = sorted_locations[0].dest.end;
+         let high = sorted_locations[0].dest.end as usize;
+         let range = 0..high;
 
-         for location in 0..high {
-            let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, location);
+         for location in range.progress() {
+            let loc: u64 = location.try_into().unwrap();
+            let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, loc);
             let temp = find_mapped_value_reversed(&almanac.mapping, &MapType::Humidity, humidity);
             let light = find_mapped_value_reversed(&almanac.mapping, &MapType::Temp, temp);
             let water = find_mapped_value_reversed(&almanac.mapping, &MapType::Light, light);
             let fertilizer = find_mapped_value_reversed(&almanac.mapping, &MapType::Water, water);
             let soil = find_mapped_value_reversed(&almanac.mapping, &MapType::Fertilizer, fertilizer);
             let seed = find_mapped_value_reversed(&almanac.mapping, &MapType::Soil, soil);
+            let thinner_seed: usize = seed.try_into().unwrap();
 
-            if seed_exists(&seed_ranges, seed) {
+            if seed_exists(&seed_ranges, thinner_seed) {
                if closest_location.is_none() {
-                  closest_location = Some(location);
-               } else if location < closest_location.unwrap() {
-                  closest_location = Some(location);
+                  closest_location = Some(loc);
+               } else if loc < closest_location.unwrap() {
+                  closest_location = Some(loc);
                }
             }
          }
@@ -124,7 +128,7 @@ fn part2_reversed(input: &str) -> u64 {
    return 0;
 }
 
-fn seed_exists(pairs: &Vec<(u64, u64)>, seed_value: u64) -> bool {
+fn seed_exists(pairs: &Vec<(usize, usize)>, seed_value: usize) -> bool {
    for pair in pairs.iter() {
       let start = pair.0;
       let end = start + pair.1;
