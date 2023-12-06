@@ -19,6 +19,6 @@ pub fn run_part1() {
 pub fn run_part2() {
     let filename: PathBuf = Path::new("data").join("day5-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
-    // let value = part2(input_string.as_str());
-    // println!("closest location v2: {}", value);
+    let value = part2(input_string.as_str());
+    println!("Closest location v2: {}", value);
 }

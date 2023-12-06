@@ -1,7 +1,7 @@
 
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PartSymbol {
     pub position: (usize, usize),
     pub length: usize,

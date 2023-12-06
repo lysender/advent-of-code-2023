@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range, ops::RangeBounds};
 
 #[derive(Clone)]
 pub enum MapType {
@@ -14,9 +14,8 @@ pub enum MapType {
 
 #[derive(Clone)]
 pub struct MapLine {
-   pub dest: u64,
-   pub source: u64,
-   pub length: u64,
+   pub dest: Range<u64>,
+   pub source: Range<u64>,
 }
 
 #[derive(Clone)]
@@ -49,7 +48,7 @@ pub fn part1(input: &str) -> u64 {
 }
 
 pub fn part2(input: &str) -> u64 {
-   part2_reversed(input)
+   part2_orig(input)
 }
 
 pub fn part2_orig(input: &str) -> u64 {
@@ -57,6 +56,7 @@ pub fn part2_orig(input: &str) -> u64 {
    let mut closest_location: Option<u64> = None;
 
    for chunks in almanac.seeds.chunks(2) {
+      println!("{:?}", chunks);
       let seed_start = chunks[0];
       let seed_end = seed_start + chunks[1];
       for seed_value in seed_start..seed_end {
@@ -94,11 +94,9 @@ fn part2_reversed(input: &str) -> u64 {
       if locations.len() > 0 {
          let mut sorted_locations = locations.clone();
          sorted_locations.sort_by(|a, b| {
-            let b_end = b.dest + b.length;
-            let a_end = a.dest + a.length;
-            b_end.cmp(&a_end)
+            b.dest.end.cmp(&a.dest.end)
          });
-         let high = sorted_locations[0].dest + sorted_locations[0].length;
+         let high = sorted_locations[0].dest.end;
 
          for location in 0..high {
             let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, location);
@@ -152,15 +150,12 @@ fn map_type_to_string(map_type: &MapType) -> String {
 
 fn find_mapped_value(mapping: &HashMap<String, Vec<MapLine>>, dest_type: &MapType, source_value: u64) -> u64 {
    let dest_type_str = map_type_to_string(dest_type);
-   if let Some(map_lines) = mapping.get(&dest_type_str) {
-      for map_line in map_lines.iter() {
-         let dest_range = map_line.dest..map_line.dest + map_line.length;
-         let source_range = map_line.source..map_line.source + map_line.length;
-
-         if source_range.contains(&source_value) {
+   if let Some(maps) = mapping.get(&dest_type_str) {
+      for map in maps.iter() {
+         if map.source.contains(&source_value) {
             // Find the distance from the start of the source range
-            let distance = source_value - source_range.min().unwrap();
-            return dest_range.min().unwrap() + distance;
+            let distance = source_value - map.source.start;
+            return map.dest.start + distance;
          }
       }
    }
@@ -169,15 +164,12 @@ fn find_mapped_value(mapping: &HashMap<String, Vec<MapLine>>, dest_type: &MapTyp
 
 fn find_mapped_value_reversed(mapping: &HashMap<String, Vec<MapLine>>, dest_type: &MapType, dest_value: u64) -> u64 {
    let source_type_str = map_type_to_string(dest_type);
-   if let Some(map_lines) = mapping.get(&source_type_str) {
-      for map_line in map_lines.iter() {
-         let dest_range = map_line.dest..map_line.dest + map_line.length;
-         let source_range = map_line.source..map_line.source + map_line.length;
-
-         if dest_range.contains(&dest_value) {
+   if let Some(maps) = mapping.get(&source_type_str) {
+      for map in maps.iter() {
+         if map.dest.contains(&dest_value) {
             // Find the distance from the start of the dest range
-            let distance = dest_value - dest_range.min().unwrap();
-            return source_range.min().unwrap() + distance;
+            let distance = dest_value - map.dest.start;
+            return map.source.start + distance;
          }
       }
    }
@@ -262,9 +254,8 @@ fn parse_input(input: &str) -> Almanac {
             }).collect();
             if numbers.len() == 3 {
                map_buffer.push(MapLine {
-                  dest: numbers[0],
-                  source: numbers[1],
-                  length: numbers[2],
+                  dest: numbers[0]..(numbers[0] + numbers[2]),
+                  source: numbers[1]..(numbers[1] + numbers[2]),
                });
             }
          }

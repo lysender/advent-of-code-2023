@@ -1,5 +1,4 @@
 
-#[derive(Debug, Clone)]
 pub struct Card {
     pub matches: u32,
 }

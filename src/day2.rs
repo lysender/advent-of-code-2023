@@ -1,5 +1,4 @@
 
-#[derive(Debug)]
 pub struct CubeSet {
     pub red: u32,
     pub green: u32,
