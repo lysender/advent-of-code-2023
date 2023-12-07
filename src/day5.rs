@@ -105,14 +105,10 @@ fn part2_reversed(input: &str) -> u64 {
                 sorted_locations.splice(..0, first_slice);
             }
 
-            'outer: for location_range in sorted_locations.iter().progress() {
-                let location_range_clone: Range<usize> = Range {
-                    start: location_range.start as usize,
-                    end: location_range.end as usize,
-                };
-                for location in location_range_clone.progress() {
-                    let loc: u64 = location.try_into().unwrap();
-                    let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, loc);
+            'outer: for location_range in sorted_locations.iter() {
+                let location_range_clone = location_range.clone();
+                for location in location_range_clone {
+                    let humidity = find_mapped_value_reversed(&almanac.mapping, &MapType::Location, location);
                     let temp = find_mapped_value_reversed(&almanac.mapping, &MapType::Humidity, humidity);
                     let light = find_mapped_value_reversed(&almanac.mapping, &MapType::Temp, temp);
                     let water = find_mapped_value_reversed(&almanac.mapping, &MapType::Light, light);
@@ -123,7 +119,7 @@ fn part2_reversed(input: &str) -> u64 {
 
                     if seed_exists(&seed_ranges, thinner_seed) {
                         // Found it?
-                        closest_location = Some(loc);
+                        closest_location = Some(location);
                         break 'outer;
                     }
                 }

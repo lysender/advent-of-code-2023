@@ -1,6 +1,13 @@
 
-use nom::bytes::complete::{tag, take_till};
-use nom::IResult;
+use nom::{
+    bytes::complete::is_not,
+    character::complete::{self, line_ending, space1, digit1},
+    multi::separated_list1,
+    sequence::separated_pair,
+    IResult,
+    Parser,
+};
+use nom_supreme::ParserExt;
 
 pub fn part1(input: &str) -> u64 {
     let lines: Vec<&str> = input.lines().collect();
@@ -8,75 +15,66 @@ pub fn part1(input: &str) -> u64 {
         return 0;
     }
 
-    let mut times: Vec<u64> = Vec::new();
-    let mut distances: Vec<u64> = Vec::new();
+    if let Ok((_, numbers)) = parse_input(input) {
+        let times = numbers.0;
+        let distances = numbers.1;
 
-    if let Ok(time_line) = parse_data_line(lines[0], "Time:") {
-        times = parse_number_line(time_line.0.trim());
-    }
-    if let Ok(distance_line) = parse_data_line(lines[1], "Distance:") {
-        distances = parse_number_line(distance_line.0.trim());
-    }
-
-    if times.len() == distances.len() {
-        let ways: Vec<u64> = times.iter().enumerate().map(|(i, time)| {
-            let distance = distances[i];
+        let ways: u64 = times.iter().zip(distances).map(|(time, distance)| {
             get_ways_to_win(*time, distance)
-        }).collect();
+        }).product();
 
-        let result: u64 = ways.iter().product();
-        return result
+        return ways;
     }
 
     0
 }
 
 pub fn part2(input: &str) -> u64 {
-    let lines: Vec<&str> = input.lines().collect();
-    if lines.len() != 2 {
-        return 0;
+    if let Ok((_, numbers)) = parse_input2(input) {
+        let time = numbers.0;
+        let distance = numbers.1;
+        return get_ways_to_win(time, distance);
     }
-
-    let mut time: u64 = 0;
-    let mut distance: u64 = 0;
-
-    if let Ok(time_line) = parse_data_line(lines[0], "Time:") {
-        let time_str = time_line.0.trim().replace(" ", "").to_string();
-        time = time_str.parse::<u64>().unwrap();
-    }
-    if let Ok(distance_line) = parse_data_line(lines[1], "Distance:") {
-        let distance_str = distance_line.0.trim().replace(" ", "").to_string();
-        distance = distance_str.parse::<u64>().unwrap();
-    }
-
-    get_ways_to_win(time, distance)
+    return 0;
 }
 
-fn parse_data_line<'a >(line: &'a str, prefix: &'a str) -> IResult<&'a str, &'a str> {
-    tag(prefix)(line)
+fn parse_input(input: &str) -> IResult<&str, (Vec<u64>, Vec<u64>)> {
+    // Collect two parsed result separated by new line
+    // Each parser will then return a vec of u64, defined below
+    separated_pair(collect_numbers, line_ending, collect_numbers).parse(input)
 }
 
-fn parse_number_line(line: &str) -> Vec<u64> {
-    let mut result: Vec<u64> = Vec::new();
-    let mut remainder: &str = line;
-    while remainder.len() > 0 {
-        if let Ok(parsed_numbers) = parse_numbers(remainder) {
-            if parsed_numbers.1.len() > 0 {
-                let num_str = parsed_numbers.1.to_string();
-                let num: u64 = num_str.parse::<u64>().unwrap();
-                result.push(num);
-            }
-
-            remainder = parsed_numbers.0.trim();
-        } else {
-            break;
-        }
-    }
-    result
+fn collect_numbers(line: &str) -> IResult<&str, Vec<u64>> {
+    // Match anything that is not numeric, then throw it away
+    // Feed the remainder to the next
+    // Parse remainder separated by 1 least 1 space
+    // Expect at least 1 result
+    // Convert match to u64, resulting in a vec of u64
+    is_not("0123456789")
+        .precedes(separated_list1(space1, complete::u64))
+        .parse(line)
 }
 
-fn parse_numbers(line: &str) -> IResult<&str, &str> {
-    take_till(|c| c == ' ')(line)
+fn parse_input2(input: &str) -> IResult<&str, (u64, u64)> {
+    // Collect two parsed result separated by new line
+    // Each parser will return a u64 value, defined below
+    separated_pair(extract_number, line_ending, extract_number).parse(input)
+}
+
+fn extract_number(line: &str) -> IResult<&str, u64> {
+    // Match anything that is not numeric, then throw it away
+    // Feed the remainder to the next
+    // Parse remainder separated by at least 1 space
+    // but join then together and parse manually into u64
+    // Expects at least 1 result
+    is_not("0123456789")
+        .precedes(
+            separated_list1(space1, digit1).map(|list| {
+                list.join("")
+                    .parse::<u64>()
+                    .expect("a valid number")
+            })
+        ).parse(line)
 }
 
 // Hold for hold milliseconds and returns the distance run in millimeters
