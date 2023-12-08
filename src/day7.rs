@@ -1,6 +1,6 @@
 
-use std::{collections::{HashMap, BTreeMap}, cmp::Ordering};
-
+use itertools::Itertools;
+use std::{collections::BTreeMap, cmp::Ordering};
 use nom::{
     character::complete::{self, line_ending, space1},
     multi::separated_list1,
@@ -159,25 +159,14 @@ fn cmp_hands_by_chars(a: &str, b: &str, card_map: &BTreeMap<&str, u32>) -> Order
 
 fn get_hand_type(cards: &str) -> HandType {
     // Collect cards to calculate the hand type
-    let mut map: HashMap<char, u8> = HashMap::new();
-    for c in cards.chars() {
-        match map.get(&c) {
-            Some(value) => {
-                let updated_value = value + 1;
-                map.insert(c, updated_value);
-            },
-            None => {
-                map.insert(c, 1);
-            }
-        }
-    }
+    let map = cards.chars().counts();
     let map_len = map.len();
+    let values: Vec<&usize> = map.values().sorted().collect();
+
     if map_len == 1 {
         return HandType::FiveOfAKind;
     } else if map_len == 2 {
         // Two possibilities: four of a kind or full house 
-        let mut values: Vec<&u8> = map.values().collect();
-        values.sort();
         if *values[1] == 4 {
             return HandType::FourOfAKind;
         } else {
@@ -185,8 +174,6 @@ fn get_hand_type(cards: &str) -> HandType {
         }
     } else if map_len == 3 {
         // Two possibilities: three of a kind or two pair 
-        let mut values: Vec<&u8> = map.values().collect();
-        values.sort();
         if *values[2] == 3 {
             return HandType::ThreeOfAKind;
         } else {
@@ -213,23 +200,12 @@ fn get_hand_type_rank(hand_type: &HandType) -> u8 {
 
 fn morph_cards(cards: &str) -> String {
     // Collect all similar characters
-    let mut map: HashMap<char, u32> = HashMap::new();
-    for ch in cards.chars() {
-        match map.get(&ch) {
-            Some(count) => {
-                let updated_count = count + 1;
-                map.insert(ch, updated_count);
-            },
-            None => {
-                map.insert(ch, 1);
-            }
-        };
-    }
+    let map = cards.chars().counts();
 
     if let Some(_) = map.get(&'J') {
         // Find the largest char that is not J
         let mut largest_ch: Option<char> = None;
-        let mut largest: u32 = 0;
+        let mut largest: usize = 0;
         for (i, v) in map.iter() {
             if i != &'J' {
                 if v > &largest {
