@@ -3,10 +3,13 @@ use std::collections::BTreeMap;
 use nom_supreme::ParserExt;
 use num::integer::lcm;
 use nom::{
-    character::complete::alphanumeric1,
+    character::complete::{alphanumeric1, char},
     sequence::{separated_pair, terminated},
+    bytes::complete::{tag, is_a},
+    branch::alt,
+    multi::many1,
     IResult,
-    Parser, bytes::complete::{tag, is_a},
+    Parser,
 };
 
 #[derive(Debug, Clone)]
@@ -15,25 +18,31 @@ struct MapNode<'a> {
     right: &'a str,
 }
 
+#[derive(Debug, Clone)]
+enum Direction {
+    Left,
+    Right,
+}
+
 pub fn part1<'a>(input: &'a str) -> u32 {
-    let (moves, map) = input.split_once("\n\n").expect("Invalid map.");
-    let moves_vec: Vec<char> = moves.chars().collect();
+    let (moves_str, map) = input.split_once("\n\n").expect("Invalid map.");
+    let (_, moves) = parse_moves(moves_str).expect("Invalid moves list.");
     let map: BTreeMap<&'a str, MapNode<'a>> = parse_map(map);
 
     // Find number of moves
-    find_moves(moves_vec, map, "AAA", "ZZZ")
+    find_moves(moves, map, "AAA", "ZZZ")
 }
 
 pub fn part2<'a>(input: &'a str) -> usize {
-    let (moves, map) = input.split_once("\n\n").expect("Invalid map.");
-    let moves_vec: Vec<char> = moves.chars().collect();
+    let (moves_str, map) = input.split_once("\n\n").expect("Invalid map.");
+    let (_, moves) = parse_moves(moves_str).expect("Invalid moves list.");
     let map: BTreeMap<&'a str, MapNode<'a>> = parse_map(map);
 
     // Find number of moves
-    find_ghost_moves(moves_vec, map, "A", "Z")
+    find_ghost_moves(moves, map, "A", "Z")
 }
 
-fn find_moves<'a>(moves: Vec<char>, map: BTreeMap<&'a str, MapNode<'a>>, start: &str, end: &str) -> u32 {
+fn find_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a>>, start: &str, end: &str) -> u32 {
     let mut steps: u32 = 0;
     let found: bool = false;
 
@@ -43,31 +52,27 @@ fn find_moves<'a>(moves: Vec<char>, map: BTreeMap<&'a str, MapNode<'a>>, start: 
             steps += 1;
             let node = map.get(current).expect("Node not found.");
             match *step {
-                'R' => {
+                Direction::Right => {
                     current = node.right;
                     if node.right == end {
                         // Found it
                         break 'upper;
                     }
                 },
-                'L' => {
+                Direction::Left => {
                     current = node.left;
                     if node.left == end {
                         // Found it
                         break 'upper;
                     }
                 },
-                _ => {
-                    println!("step: {}", step);
-                    panic!("Unexpected move.");
-                }
             };
         }
     }
     steps
 }
 
-fn find_ghost_moves<'a>(moves: Vec<char>, map: BTreeMap<&'a str, MapNode<'a>>, start_end: &str, end_end: &str) -> usize {
+fn find_ghost_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a>>, start_end: &str, end_end: &str) -> usize {
     let starting_nodes: Vec<&'a str> = map
         .keys()
         .filter(|k| k.ends_with(start_end))
@@ -85,7 +90,7 @@ fn find_ghost_moves<'a>(moves: Vec<char>, map: BTreeMap<&'a str, MapNode<'a>>, s
     0
 }
 
-fn find_ghost_moves_single<'a>(moves: &Vec<char>, map: &BTreeMap<&'a str, MapNode<'a>>, start: &str, pattern: &str) -> usize {
+fn find_ghost_moves_single<'a>(moves: &Vec<Direction>, map: &BTreeMap<&'a str, MapNode<'a>>, start: &str, pattern: &str) -> usize {
     let found: bool = false;
     let mut steps: usize = 0;
     let mut current: &str = start;
@@ -95,21 +100,18 @@ fn find_ghost_moves_single<'a>(moves: &Vec<char>, map: &BTreeMap<&'a str, MapNod
             steps += 1;
             let node = map.get(current).expect("Node not found.");
             match the_move {
-                'R' => {
+                Direction::Right => {
                     current = node.right;
                     if node.right.ends_with(pattern) {
                         break 'upper;
                     }
                 },
-                'L' => {
+                Direction::Left => {
                     current = node.left;
                     if node.left.ends_with(pattern) {
                         break 'upper;
                     }
                 },
-                _ => {
-                    panic!("Invalid move.");
-                }
             }
         }
     }
@@ -120,7 +122,7 @@ fn parse_map<'a>(input: &'a str) -> BTreeMap<&'a str, MapNode<'a>> {
     let mut map: BTreeMap<&'a str, MapNode<'a>> = BTreeMap::new();
     for line in input.lines() {
         let (label, values) = parse_line(line).expect("Invalid instruction line.");
-        let (_, (left, right)) = parse_moves(values).unwrap();
+        let (_, (left, right)) = parse_instructions(values).unwrap();
         map.insert(label, MapNode { left, right });
     }
 
@@ -131,7 +133,14 @@ fn parse_line(line: &str) -> Option<(&str, &str)> {
     line.split_once(" = ")
 }
 
-fn parse_moves(line: &str) -> IResult<&str, (&str, &str)> {
+fn parse_moves(line: &str) -> IResult<&str, Vec<Direction>> {
+    many1(alt((
+        char('R').map(|_| Direction::Right),
+        char('L').map(|_| Direction::Left),
+    ))).parse(line)
+}
+
+fn parse_instructions(line: &str) -> IResult<&str, (&str, &str)> {
     separated_pair(left_str, tag(", "), right_str).parse(line)
 }
 
