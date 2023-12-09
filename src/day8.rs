@@ -1,11 +1,10 @@
 
 use std::collections::BTreeMap;
-use nom_supreme::ParserExt;
 use num::integer::lcm;
 use nom::{
     character::complete::{alphanumeric1, char},
-    sequence::{separated_pair, terminated},
-    bytes::complete::{tag, is_a},
+    sequence::{separated_pair, delimited},
+    bytes::complete::tag,
     branch::alt,
     multi::many1,
     IResult,
@@ -42,7 +41,11 @@ pub fn part2<'a>(input: &'a str) -> usize {
     find_ghost_moves(moves, map, "A", "Z")
 }
 
-fn find_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a>>, start: &str, end: &str) -> u32 {
+fn find_moves<'a>(
+    moves: Vec<Direction>,
+    map: BTreeMap<&'a str, MapNode<'a>>,
+    start: &str, end: &str,
+) -> u32 {
     let mut steps: u32 = 0;
     let found: bool = false;
 
@@ -72,7 +75,12 @@ fn find_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a>>, st
     steps
 }
 
-fn find_ghost_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a>>, start_end: &str, end_end: &str) -> usize {
+fn find_ghost_moves<'a>(
+    moves: Vec<Direction>,
+    map: BTreeMap<&'a str, MapNode<'a>>,
+    start_end: &str,
+    end_end: &str,
+) -> usize {
     let starting_nodes: Vec<&'a str> = map
         .keys()
         .filter(|k| k.ends_with(start_end))
@@ -90,7 +98,12 @@ fn find_ghost_moves<'a>(moves: Vec<Direction>, map: BTreeMap<&'a str, MapNode<'a
     0
 }
 
-fn find_ghost_moves_single<'a>(moves: &Vec<Direction>, map: &BTreeMap<&'a str, MapNode<'a>>, start: &str, pattern: &str) -> usize {
+fn find_ghost_moves_single<'a>(
+    moves: &Vec<Direction>,
+    map: &BTreeMap<&'a str, MapNode<'a>>,
+    start: &str,
+    pattern: &str,
+) -> usize {
     let found: bool = false;
     let mut steps: usize = 0;
     let mut current: &str = start;
@@ -141,15 +154,11 @@ fn parse_moves(line: &str) -> IResult<&str, Vec<Direction>> {
 }
 
 fn parse_instructions(line: &str) -> IResult<&str, (&str, &str)> {
-    separated_pair(left_str, tag(", "), right_str).parse(line)
+   delimited(tag("("), parse_directions, tag(")")).parse(line)
 }
 
-fn left_str(line: &str) -> IResult<&str, &str> {
-    is_a("(").precedes(alphanumeric1).parse(line)
-}
-
-fn right_str(line: &str) -> IResult<&str, &str> {
-    terminated(alphanumeric1, tag(")")).parse(line)
+fn parse_directions(line: &str) -> IResult<&str, (&str, &str)> {
+    separated_pair(alphanumeric1, tag(", "), alphanumeric1).parse(line)
 }
 
 fn lcm_vec(input: &Vec<usize>) -> usize {
