@@ -2,7 +2,7 @@
 use std::{fs, path::PathBuf};
 use std::path::Path;
 
-use aoc2023::day1::{part1, part2};
+use aoc2023::day04::{part1, part2};
 
 fn main() {
     run_part1();
@@ -10,17 +10,15 @@ fn main() {
 }
 
 pub fn run_part1() {
-    let filename: PathBuf = Path::new("data").join("day1-input.txt");
+    let filename: PathBuf = Path::new("data").join("day04-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
     let value = part1(input_string.as_str());
-    println!("Calibration value total: v1: {}", value);
+    println!("Winning points: {}", value);
 }
 
 pub fn run_part2() {
-    let filename: PathBuf = Path::new("data").join("day1-input.txt");
+    let filename: PathBuf = Path::new("data").join("day04-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
     let value = part2(input_string.as_str());
-
-    println!("Calibration value total: v2: {}", value);
+    println!("Total cards: {}", value);
 }
-

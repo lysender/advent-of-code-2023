@@ -3,7 +3,7 @@ use std::time::Instant;
 use std::{fs, path::PathBuf};
 use std::path::Path;
 
-use aoc2023::day6::{part1, part2};
+use aoc2023::day09::{part1, part2};
 
 fn main() {
     run_part1();
@@ -11,21 +11,21 @@ fn main() {
 }
 
 pub fn run_part1() {
-    let filename: PathBuf = Path::new("data").join("day6-input.txt");
+    let filename: PathBuf = Path::new("data").join("day09-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
     let ts = Instant::now();
     let value = part1(input_string.as_str());
     let duration = ts.elapsed().as_millis();
-    println!("Product of total ways: {}", value);
+    println!("Total steps: {}", value);
     println!("Duration: {} ms", duration);
 }
 
 pub fn run_part2() {
-    let filename: PathBuf = Path::new("data").join("day6-input.txt");
+    let filename: PathBuf = Path::new("data").join("day09-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
     let ts = Instant::now();
     let value = part2(input_string.as_str());
     let duration = ts.elapsed().as_millis();
-    println!("Product of total ways: {}", value);
+    println!("Total steps: {}", value);
     println!("Duration: {} ms", duration);
 }

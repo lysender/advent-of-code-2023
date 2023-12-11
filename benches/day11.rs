@@ -2,7 +2,7 @@
 use std::{fs, path::PathBuf};
 use std::path::Path;
 
-use aoc2023::day1;
+use aoc2023::day11::{part1, part2};
 
 fn main() {
     divan::main();
@@ -10,14 +10,14 @@ fn main() {
 
 #[divan::bench]
 fn part1_bench() {
-    let filename: PathBuf = Path::new("data").join("day1-input.txt");
+    let filename: PathBuf = Path::new("data").join("day11-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
-    day1::part1(divan::black_box(input_string.as_str()));
+    part1(divan::black_box(input_string.as_str()));
 }
 
 #[divan::bench]
 fn part2_bench() {
-    let filename: PathBuf = Path::new("data").join("day2-input.txt");
+    let filename: PathBuf = Path::new("data").join("day11-input.txt");
     let input_string = fs::read_to_string(filename).unwrap();
-    day1::part2(divan::black_box(input_string.as_str()));
+    part2(divan::black_box(input_string.as_str()));
 }
