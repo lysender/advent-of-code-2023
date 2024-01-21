@@ -1,12 +1,12 @@
 
 use std::collections::{HashMap, HashSet};
-use glam::IVec2;
+use glam::I64Vec2;
 use num::abs;
 
 #[derive(Debug, Clone)]
 struct Galaxy {
-    id: u32,
-    coord: IVec2,
+    id: u64,
+    coord: I64Vec2,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,42 +15,42 @@ enum SkyItem {
     Space,
 }
 
-pub fn part1(input: &str) -> u32 {
+pub fn part1(input: &str) -> u64 {
     let sky = parse_input(input);
     sum_shortest_paths(&sky, 2)
 }
 
-pub fn part2(input: &str) -> u32 {
+pub fn part2(input: &str) -> u64 {
     let sky = parse_input(input);
     sum_shortest_paths(&sky, 1000000)
 }
 
-fn sum_shortest_paths(sky: &Vec<Vec<SkyItem>>, pad: i32) -> u32 {
+fn sum_shortest_paths(sky: &Vec<Vec<SkyItem>>, pad: i64) -> u64 {
     let galaxies = expand_universe(&sky, pad);
     let pairs = create_galaxy_pairs(&galaxies);
 
-    let mut shortest_paths: u32 = 0;
+    let mut shortest_paths: u64 = 0;
     for pair in pairs.iter() {
         let distance = find_manhattan_distance(&pair.0.coord, &pair.1.coord);
-        shortest_paths += distance as u32;
+        shortest_paths += distance as u64;
     }
     shortest_paths
 }
 
-fn find_manhattan_distance(source: &IVec2, dest: &IVec2) -> i32 {
+fn find_manhattan_distance(source: &I64Vec2, dest: &I64Vec2) -> i64 {
     abs(source.x - dest.x) + abs(source.y - dest.y)
 }
 
 fn create_galaxy_pairs(galaxies: &Vec<Galaxy>) -> Vec<(Galaxy, Galaxy)> {
-    let mut pairs: HashMap<IVec2, (Galaxy, Galaxy)> = HashMap::new();
+    let mut pairs: HashMap<I64Vec2, (Galaxy, Galaxy)> = HashMap::new();
 
     for x in 0..galaxies.len() {
         for y in 1..galaxies.len() {
             let x_item = &galaxies[x];
             let y_item = &galaxies[y];
             if x_item.id != y_item.id {
-                let key = IVec2::from((x_item.id as i32, y_item.id as i32));
-                let key_rev = IVec2::from((y_item.id as i32, x_item.id as i32));
+                let key = I64Vec2::from((x_item.id as i64, y_item.id as i64));
+                let key_rev = I64Vec2::from((y_item.id as i64, x_item.id as i64));
                 if pairs.get(&key).is_none() && pairs.get(&key_rev).is_none() {
                     pairs.insert(key, (x_item.clone(), y_item.clone()));
                 }
@@ -60,7 +60,7 @@ fn create_galaxy_pairs(galaxies: &Vec<Galaxy>) -> Vec<(Galaxy, Galaxy)> {
     pairs.into_values().collect()
 }
 
-fn expand_universe(sky: &Vec<Vec<SkyItem>>, pad: i32) -> Vec<Galaxy> {
+fn expand_universe(sky: &Vec<Vec<SkyItem>>, pad: i64) -> Vec<Galaxy> {
     let galaxies = collect_galaxies(sky);
 
     // Find empty rows and empty columns
@@ -96,32 +96,32 @@ fn expand_universe(sky: &Vec<Vec<SkyItem>>, pad: i32) -> Vec<Galaxy> {
         let mut y = galaxy.coord.y;
 
         for empty_x in empty_rows.iter() {
-            if (*empty_x as i32) < galaxy.coord.x {
+            if (*empty_x as i64) < galaxy.coord.x {
                 x += pad - 1;
             }
         }
 
         for empty_y in empty_cols.iter() {
-            if (*empty_y as i32) < galaxy.coord.y {
+            if (*empty_y as i64) < galaxy.coord.y {
                 y += pad - 1;
             }
         }
         Galaxy {
             id: galaxy.id,
-            coord: IVec2::from((x, y))
+            coord: I64Vec2::from((x, y))
         }
     }).collect::<Vec<Galaxy>>()
 }
 
 fn collect_galaxies(sky: &Vec<Vec<SkyItem>>) -> Vec<Galaxy> {
-    let mut galaxy_count: u32 = 0;
+    let mut galaxy_count: u64 = 0;
     let mut galaxies: Vec<Galaxy> = Vec::new();
     for (x, row) in sky.iter().enumerate() {
         for (y, item) in row.iter().enumerate() {
             if item == &SkyItem::Galaxy {
                 galaxy_count += 1;
 
-                let coord = IVec2::from((x as i32, y as i32));
+                let coord = I64Vec2::from((x as i64, y as i64));
                 galaxies.push(Galaxy { id: galaxy_count, coord });
             }
         }
