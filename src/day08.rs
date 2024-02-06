@@ -1,4 +1,3 @@
-
 use std::collections::BTreeMap;
 use num::integer::lcm;
 use nom::{

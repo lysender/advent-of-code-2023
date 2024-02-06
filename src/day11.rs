@@ -1,4 +1,3 @@
-
 use std::collections::{HashMap, HashSet};
 use glam::I64Vec2;
 use num::abs;

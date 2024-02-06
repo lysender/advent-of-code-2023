@@ -1,4 +1,3 @@
-
 const SPELLED_DIGITS: [&'static str; 9] = [
     "one",
     "two",

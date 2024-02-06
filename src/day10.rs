@@ -1,4 +1,3 @@
-
 use glam::IVec2;
 use std::ops::Range;
 

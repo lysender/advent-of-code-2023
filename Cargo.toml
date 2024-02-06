@@ -68,4 +68,3 @@ harness = false
 [[bench]]
 name = "day13"
 harness = false
-
