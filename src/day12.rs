@@ -4,6 +4,11 @@ use nom::{
     bytes::complete::is_a,
     IResult,
 };
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 use indicatif::ProgressIterator;
 use itertools::Itertools;
 
@@ -13,18 +18,102 @@ struct SpringRecord {
     stats: Vec<u32>,
 }
 
+#[derive(Hash)]
+struct Payload<'a> {
+    conditions: &'a str,
+    last_pos: &'a Option<usize>,
+}
+
+struct MemoCompute {
+    cache: HashMap<u64, u32>,
+    unknown_positions: Vec<usize>,
+    stats: Vec<u32>,
+}
+
+impl MemoCompute {
+    fn new(record: &SpringRecord) -> Self {
+        // Find "?" positions
+        let mut unknown_positions: Vec<usize> = Vec::new();
+        for (i, ch) in record.conditions.chars().enumerate() {
+            if ch == '?' {
+                unknown_positions.push(i);
+            }
+        }
+
+        MemoCompute {
+            cache: HashMap::new(),
+            unknown_positions,
+            stats: record.stats.clone(),
+        }
+    }
+
+    fn count_arrangements(&mut self, conditions: &str, last_pos: Option<usize>) -> u32 {
+        // Replace each unknown condition with either "#" or "." from right to left
+        // and check if it matches the stats.
+        // Do this recursively and count 1 when it matches
+        if let Some(pos) = last_pos {
+            let index = self.unknown_positions[pos];
+
+            // Prevent overflow
+            let mut next_pos = None;
+            if pos > 0 {
+                next_pos = Some(pos - 1);
+            }
+
+            let mut conditions_copy1 = conditions.to_string();
+            let mut conditions_copy2 = conditions.to_string();
+
+            // Test for when it is damaged
+            conditions_copy1.replace_range(index..index+1, "#");
+
+            let def_count: u32;
+            let def_tail = &conditions_copy1[index..];
+            let def_cache_key = create_payload_key(def_tail, &next_pos);
+            if let Some(def_count_cached) = self.cache.get(&def_cache_key) {
+                println!("cache hit... {} = {}", def_cache_key, def_count_cached);
+                def_count = *def_count_cached;
+            } else {
+                def_count = self.count_arrangements(conditions_copy1.as_str(),next_pos);
+                println!("setting cache: {} = {}, {}", def_cache_key, def_count, def_tail);
+                self.cache.insert(def_cache_key, def_count);
+            }
+
+            // Test for when it is operational
+            conditions_copy2.replace_range(index..index+1, ".");
+
+            let working_count: u32;
+            let working_tail = &conditions_copy2[index..];
+            let working_cache_key = create_payload_key(working_tail, &next_pos);
+            if let Some(working_count_cached) = self.cache.get(&working_cache_key) {
+                println!("cache hit... {} = {}", working_cache_key, working_count_cached);
+                working_count = *working_count_cached;
+            } else {
+                working_count = self.count_arrangements(conditions_copy2.as_str(), next_pos);
+                self.cache.insert(working_cache_key, working_count);
+            }
+
+            return def_count + working_count;
+        }
+
+        // If there are no unknown positions, just test it if it matches the stats
+        if compare_arrangement(conditions, &self.stats) {
+            return 1;
+        }
+        return 0;
+    }
+}
+
 pub fn part1(input: &str) -> u32 {
     let report = parse_input(input);
     report.iter().progress().map(|record| {
-        get_arrangement_counts(record)
+        get_arrangement_counts_memo(record)
     }).sum()
 }
 
 pub fn part2(input: &str) -> u32 {
     let report = parse_input(input);
-    // let report = parse_input_unfolded(input);
     report.iter().progress().map(|record| {
-        get_arrangement_counts(record)
+        get_arrangement_counts_memo(record)
     }).sum()
 }
 
@@ -60,28 +149,37 @@ fn get_arrangement_counts(record: &SpringRecord) -> u32 {
         last_pos = Some(unknown_positions.len() - 1);
     }
 
+    // Create a caching mechanism for partial calculations
+    // Find a way to pass it around and allow immutable read and mutable write
+    let cache: Rc<RefCell<HashMap<u64, u32>>> = Rc::new(RefCell::new(HashMap::new()));
 
-    get_arrangement_counts_inner(record.conditions.as_str(), &unknown_positions, last_pos, &record.stats)
+    get_arrangement_counts_inner(&cache, record.conditions.as_str(), &unknown_positions, last_pos, &record.stats)
 }
 
-fn get_arrangement_counts_inner_v2(conditions: &str, unknown_positions: &Vec<usize>, stats: &Vec<u32>) -> u32 {
-    let mut matches_count: u32 = 0;
-
-    for x in 0..unknown_positions.len() {
-        for y in 0..unknown_positions.len() {
-            // do nothing
-        }
+fn get_arrangement_counts_memo(record: &SpringRecord) -> u32 {
+    let conditions = record.conditions.clone();
+    let mut memo = MemoCompute::new(record);
+    let mut last_pos: Option<usize> = None;
+    if memo.unknown_positions.len() > 0 {
+        last_pos = Some(memo.unknown_positions.len() - 1);
     }
 
-
-    matches_count
+    memo.count_arrangements(&conditions, last_pos)
 }
 
-fn get_arrangement_counts_inner(conditions: &str, unknown_positions: &Vec<usize>, last_pos: Option<usize>, stats: &Vec<u32>) -> u32 {
+fn get_arrangement_counts_inner(
+    cache: &Rc<RefCell<HashMap<u64, u32>>>,
+    conditions: &str,
+    unknown_positions: &Vec<usize>,
+    last_pos: Option<usize>,
+    stats: &Vec<u32>,
+) -> u32 {
     // Replace each unknown condition with either "#" or "." from right to left
     // and check if it matches the stats.
     // Do this recursively and count 1 when it matches
     if let Some(pos) = last_pos {
+        let index = unknown_positions[pos];
+
         // Prevent overflow
         let mut next_pos = None;
         if pos > 0 {
@@ -91,17 +189,33 @@ fn get_arrangement_counts_inner(conditions: &str, unknown_positions: &Vec<usize>
         let mut conditions_copy1 = conditions.to_string();
         let mut conditions_copy2 = conditions.to_string();
 
-        let mut matches_count: u32 = 0;
         // Test for when it is damaged
-        let index = unknown_positions[pos];
         conditions_copy1.replace_range(index..index+1, "#");
-        matches_count += get_arrangement_counts_inner(conditions_copy1.as_str(), unknown_positions, next_pos, stats);
+
+        let def_count: u32;
+        let def_tail = &conditions_copy1[index..];
+        let def_cache_key = create_payload_key(def_tail, &next_pos);
+        if let Some(def_count_cached) = cache.borrow().get(&def_cache_key) {
+            def_count = *def_count_cached;
+        } else {
+            def_count = get_arrangement_counts_inner(cache, conditions_copy1.as_str(), unknown_positions, next_pos, stats);
+            cache.borrow_mut().insert(def_cache_key, def_count);
+        }
 
         // Test for when it is operational
         conditions_copy2.replace_range(index..index+1, ".");
-        matches_count += get_arrangement_counts_inner(conditions_copy2.as_str(), unknown_positions, next_pos, stats);
 
-        return matches_count;
+        let working_count: u32;
+        let working_tail = &conditions_copy2[index..];
+        let working_cache_key = create_payload_key(working_tail, &next_pos);
+        if let Some(working_count_cached) = cache.borrow().get(&working_cache_key) {
+            working_count = *working_count_cached;
+        } else {
+            working_count = get_arrangement_counts_inner(cache, conditions_copy2.as_str(), unknown_positions, next_pos, stats);
+            cache.borrow_mut().insert(working_cache_key, working_count);
+        }
+
+        return def_count + working_count;
     }
 
     // If there are no unknown positions, just test it if it matches the stats
@@ -111,15 +225,18 @@ fn get_arrangement_counts_inner(conditions: &str, unknown_positions: &Vec<usize>
     return 0;
 }
 
-fn get_arrangements_inner_v3(conditions: &str, stats: &Vec<u32>) -> u32 {
-    // For each stat, find the lower and upper range of possible combinations
-    // let r = the range
-    // if there are no other stats to the right
-    // min r = stat
-    // otherwise
-    // min r = stat + 1
-    // max r is identified when
-    // if are no damaged 
+fn create_payload_key(
+    conditions: &str,
+    last_pos: &Option<usize>,
+) -> u64 {
+    let mut usher = DefaultHasher::new();
+    let payload = Payload {
+        conditions,
+        last_pos,
+    };
+
+    payload.hash(&mut usher);
+    usher.finish()
 }
 
 fn dots(line: &str) -> IResult<&str, &str> {
@@ -197,12 +314,12 @@ mod tests {
 
         let report = parse_input(input);
         assert_eq!(report.len(), 6);
-        assert_eq!(get_arrangement_counts(&report[0]), 1);
-        assert_eq!(get_arrangement_counts(&report[1]), 4);
-        assert_eq!(get_arrangement_counts(&report[2]), 1);
-        assert_eq!(get_arrangement_counts(&report[3]), 1);
-        assert_eq!(get_arrangement_counts(&report[4]), 4);
-        assert_eq!(get_arrangement_counts(&report[5]), 10);
+        assert_eq!(get_arrangement_counts_memo(&report[0]), 1);
+        assert_eq!(get_arrangement_counts_memo(&report[1]), 4);
+        assert_eq!(get_arrangement_counts_memo(&report[2]), 1);
+        assert_eq!(get_arrangement_counts_memo(&report[3]), 1);
+        assert_eq!(get_arrangement_counts_memo(&report[4]), 4);
+        assert_eq!(get_arrangement_counts_memo(&report[5]), 10);
     }
 
     #[test]
@@ -229,23 +346,12 @@ mod tests {
 
         let report = parse_input_unfolded(input);
         assert_eq!(report.len(), 6);
-        assert_eq!(get_arrangement_counts(&report[0]), 1);
-        assert_eq!(get_arrangement_counts(&report[1]), 16384);
-        assert_eq!(get_arrangement_counts(&report[2]), 1);
-        assert_eq!(get_arrangement_counts(&report[3]), 4);
-        assert_eq!(get_arrangement_counts(&report[4]), 2500);
-        assert_eq!(get_arrangement_counts(&report[5]), 506250);
-    }
-
-
-    #[test]
-    fn test_part2_combinations() {
-        let symbols: Vec<char> = vec!['#', '.'];
-        println!("About to test itertools::combinations");
-        for row in (0..5).permutations(5) {
-            println!("{:?}", row);
-        }
-        assert_eq!(1, 2);
+        assert_eq!(get_arrangement_counts_memo(&report[0]), 1);
+        assert_eq!(get_arrangement_counts_memo(&report[1]), 16384);
+        assert_eq!(get_arrangement_counts_memo(&report[2]), 1);
+        assert_eq!(get_arrangement_counts_memo(&report[3]), 4);
+        assert_eq!(get_arrangement_counts_memo(&report[4]), 2500);
+        assert_eq!(get_arrangement_counts_memo(&report[5]), 506250);
     }
 
     #[test]
